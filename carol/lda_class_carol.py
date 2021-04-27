@@ -141,7 +141,7 @@ class LDA2(BaseLDA):
             H=alpha0@alpha0.T*M*poly_sum_alpha+np.diag(g.reshape((k,))+1e-10-(alpha0**2*M*polygamma(1,alpha0)).reshape((k,)))
             a1=a0-np.linalg.inv(H)@g
             alpha1=np.exp(a1)
-            ll1=utilities.loglik(alpha1,gamma_list,M,k)
+            ll1=utilities_carol.loglik(alpha1,gamma_list,M,k)
             ll.append(ll1)
             if np.abs((ll1-ll0)/(1+abs(ll0)))<conv_threshold:
                 #print('newton finished at iteration',it)
