@@ -77,5 +77,5 @@ for key, group in df.groupby('model'):
     group.plot('proportion of training data', 'avg', yerr='sd',
         label=key, ax=ax)
 plt.ylabel('accuracy')
-plt.savefig('../figures/accuracy.png', dpi = 1000)
+# plt.savefig('../figures/accuracy.png', dpi = 1000)
 pass
