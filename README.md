@@ -14,5 +14,8 @@ pip install foobar
 ## Usage
 
 ```python
-
+import LDA
+my_lda_func(xxxx)
 ```
+
+
