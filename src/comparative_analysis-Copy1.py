@@ -15,8 +15,8 @@ import pandas as pd
 nltk.download('reuters')
 
 np.random.seed(1)
-ntotal=1000
-num_topics=5
+ntotal=10
+num_topics=2
 documents = reuters.fileids()
 documents=np.random.choice(documents,ntotal)
 docs=[reuters.raw(d) for d in documents]
@@ -47,9 +47,10 @@ bigram_vectorizer = CountVectorizer(ngram_range=(1, 2),token_pattern=r'\b\w+\b',
 analyze = bigram_vectorizer.build_analyzer()
 res_bigram=bigram_vectorizer.fit_transform(docs).toarray()
 methods='plsi,lda1,lda2,bigram'.split(',')
-prop=[0.01,0.05,0.1,0.2,0.3,0.5]
+#prop=[0.01,0.05,0.1,0.2,0.3,0.5]
+prop=[0.5,0.6]
 acclist=[]
-nmc=19
+nmc=5
 for l in range(nmc):
     acc=np.zeros((len(prop),len(methods)))
     for j,p in enumerate(prop):
@@ -77,5 +78,6 @@ for key, group in df.groupby('model'):
     group.plot('proportion of training data', 'avg', yerr='sd',
         label=key, ax=ax)
 plt.ylabel('accuracy')
-plt.savefig('comparative_analysis.png', dpi = 1000) # the plot will be saved to the current directory
+# plt.show()
+plt.savefig('comparative_analysis.png', dpi = 1000)
 pass
