@@ -8,6 +8,14 @@
 *Xinwen Li:* Implementation of optimization
 *Yingyu Fu:* Implementation of algorithm, Applications of simulated and real-world data sets
 
+**Installation instructions:**
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install the package. We recommend to use a vitualenv to install.
+
+```bash
+git clone https://github.com/montecristo7/STA663L_Final_Project_Latent_Dirichlet_Allocation.git
+pip install .
+```
+
 April 26, 2021
 
 ## Abstract
