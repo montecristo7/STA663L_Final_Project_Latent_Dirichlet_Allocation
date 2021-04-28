@@ -1,7 +1,11 @@
+#!/usr/bin/env python
+
 import pandas as pd
 import numpy as np
 import re
-from scipy.special import psi  # gamma function utils
+from scipy.special import psi
+from pprint import pprint
+from gensim.corpora import Dictionary
 import logging
 import queue
 from numba import jit,njit
@@ -132,8 +136,6 @@ class LdaState:
         self.numdocs = targetsize
 
 
-# ## helper functions for my_lda_func
-
 def initalize(id2word,num_topics,dtype,random_state):
     '''
     initialize all the variables needed for LDA
@@ -212,7 +214,6 @@ def m_step(model_states,pass_ ,num_updates, chunksize,other):
     
     return model_states,num_updates,diff
 
-# ## Optimization on the 2 functions below
 
 def e_step_2_inner_update(iterations,gammad,alpha,expElogthetad,cts,phinorm,expElogbetad,gamma_threshold,converged,epsilon):
     '''
@@ -225,7 +226,7 @@ def e_step_2_inner_update(iterations,gammad,alpha,expElogthetad,cts,phinorm,expE
         # Substituting the value of the optimal phi back into
         # the update for gamma gives this update. Cf. Lee&Seung 2001.
         gammad = (alpha + expElogthetad.astype(np.float32) * np.dot(cts.astype(np.float32) / phinorm.astype(np.float32), expElogbetad.T.astype(np.float32)))
-        Elogthetad = dirichlet_expectation_numba(gammad)
+        Elogthetad = dirichlet_expectation(gammad)
         expElogthetad = np.exp(Elogthetad)
         phinorm = np.dot(expElogthetad, expElogbetad) + epsilon
         # If gamma hasn't changed much, we're done.
@@ -236,7 +237,7 @@ def e_step_2_inner_update(iterations,gammad,alpha,expElogthetad,cts,phinorm,expE
     return gammad, expElogthetad,phinorm,converged
 
 
-# ## Main LDA function
+### Plain LDA version
 
 def my_lda_func(corpus, num_topics, id2word, random_state=10,  passes=1, num_words=10,
                 iterations=50, gamma_threshold=0.001, dtype=np.float32,  chunksize=100, topics_only=True, verbose=False):
@@ -302,7 +303,132 @@ def my_lda_func(corpus, num_topics, id2word, random_state=10,  passes=1, num_wor
         return shown,gamma
 
 
-# ### small dataset example
+########### Optimization on the 2 functions below  ############ 
+
+
+dirichlet_expectation_numba = jit(forceobj=True)(dirichlet_expectation) 
+
+@jit(forceobj=True)
+def e_step_2_inner_update_opt(iterations,gammad,alpha,expElogthetad,cts,phinorm,expElogbetad,gamma_threshold,converged,epsilon):
+    '''
+    explicitly updating phi
+    '''
+    
+    for i in range(iterations):
+        lastgamma = gammad
+        # We represent phi implicitly to save memory and time.
+        # Substituting the value of the optimal phi back into
+        # the update for gamma gives this update. Cf. Lee&Seung 2001.
+        gammad = (alpha + expElogthetad.astype(np.float32) * np.dot(cts.astype(np.float32) / phinorm.astype(np.float32), expElogbetad.T.astype(np.float32)))
+        Elogthetad = dirichlet_expectation_numba(gammad)
+        expElogthetad = np.exp(Elogthetad)
+        phinorm = np.dot(expElogthetad, expElogbetad) + epsilon
+        # If gamma hasn't changed much, we're done.
+        if np.mean(np.abs(gammad - lastgamma)) < gamma_threshold:
+            converged += 1
+            break
+
+    return gammad, expElogthetad,phinorm,converged
+
+
+################################################################ 
+
+
+def e_step_2_opt(chunk,gamma,tmpElogtheta,tmpexpElogtheta,expElogbeta,sstats,converged,dtype,iterations,alpha,gamma_threshold):
+    '''
+    e step continue
+    for each document d, update d's gamma and phi
+    '''
+    epsilon = 1e-7
+
+    for d, doc in enumerate(chunk):
+        ids = [idx for idx, _ in doc]
+        cts = np.fromiter([cnt for _, cnt in doc], dtype=dtype, count=len(doc))
+        gammad = gamma[d, :]
+        Elogthetad = tmpElogtheta[d, :]
+        expElogthetad = tmpexpElogtheta[d, :]
+        expElogbetad = expElogbeta[:, ids]
+
+        # The optimal phi_{dwk} is proportional to expElogthetad_k * expElogbetad_w.
+        # phinorm is the normalizer.
+        phinorm = np.dot(expElogthetad, expElogbetad) + epsilon
+
+        gammad, expElogthetad,phinorm,converged = e_step_2_inner_update_opt(iterations,gammad,alpha,expElogthetad,cts,phinorm,expElogbetad,gamma_threshold,converged,epsilon)
+        
+        gamma[d, :] = gammad
+        sstats[:, ids] += np.outer(expElogthetad.T, cts / phinorm)
+    return gamma, sstats,converged
+
+
+
+### Optimized LDA Function
+
+def my_lda_func_opt(corpus, num_topics, id2word, random_state=10,  passes=1, num_words=10,
+                iterations=50, gamma_threshold=0.001, dtype=np.float32,  chunksize=100, topics_only=True, verbose=False):
+    
+    
+    num_terms,alpha,eta,rand,model_states,expElogbeta = initalize(id2word,num_topics,dtype,random_state)
+
+    # Update
+    lencorpus = len(corpus)
+    chunksize = min(lencorpus, chunksize)
+    model_states.numdocs += lencorpus
+    num_updates = 0
+
+    for pass_ in range(passes):
+        all_chunks = chunks(corpus, chunksize)
+
+        for chunk_no, chunk in enumerate(all_chunks):
+            other = LdaState(eta, (num_topics, num_terms), dtype=dtype)
+            
+            if len(chunk) > 1:
+                if verbose:
+                    print(f'performing inference on a chunk of {len(chunk) } documents')
+            else:
+                raise
+            # e-step
+            gamma,tmpElogtheta,tmpexpElogtheta,sstats,converged = e_step_1(rand,chunk,num_topics, dtype,expElogbeta)
+
+            # e-step-2
+            gamma, sstats,converged = e_step_2_opt(chunk,gamma,tmpElogtheta,tmpexpElogtheta,expElogbeta,sstats,converged,dtype,iterations,alpha,gamma_threshold)
+
+            
+            if len(chunk) > 1:
+                if verbose:
+                    print(f"{converged}/{len(chunk)} documents converged within {iterations} iterations")
+
+            sstats *= expElogbeta
+
+            other.sstats += sstats
+            other.numdocs += gamma.shape[0]
+
+            # Do mstep
+            if verbose:
+                print('Update topics')
+            model_states, num_updates,diff = m_step(model_states,pass_ ,num_updates, chunksize,other)
+            
+            if verbose:
+                print("topic diff {}".format(diff))
+
+    shown = []
+    topic = model_states.get_lambda()
+
+    for i in range(num_topics):
+        topic_ = topic[i]
+        topic_ = topic_ / topic_.sum()  # normalize to probability distribution
+        bestn = topic_.argsort()[-num_words:][::-1]
+
+        topic_ = [(id2word[id], topic_[id]) for id in bestn]
+        topic_ = ' + '.join('%.3f*"%s"' % (v, k) for k, v in topic_)
+        shown.append((i, topic_))
+
+    if topics_only:
+        return shown
+    else:
+        return shown,gamma
+
+
+### small dataset example
 
 # Sample data for analysis
 d1 = "Java is a language for programming that develops a software for several platforms. A compiled code or bytecode on Java application can run on most of the operating systems including Linux, Mac operating system, and Linux. Most of the syntax of Java is derived from the C++ and C languages."
@@ -323,105 +449,43 @@ for row in tf_df.values:
             lil_sub.append((idx, item))
     lil.append(lil_sub)
     
-print(my_lda_func(corpus=lil, num_topics=2, id2word=id2word, num_words=10)
+pprint(my_lda_func_opt(corpus=lil, num_topics=2, id2word=id2word, num_words=10))
 
-
-get_ipython().run_line_magic('timeit', '-r3 -n2 my_lda_func(corpus=lil, num_topics=2, id2word=id2word, num_words=10)')
-# without jit 
-
-
-get_ipython().run_line_magic('timeit', '-r3 -n2 my_lda_func(corpus=lil, num_topics=2, id2word=id2word, num_words=10)')
-# with jit
+get_ipython().run_line_magic('timeit', '-r10 -n10 my_lda_func(corpus=lil, num_topics=2, id2word=id2word, num_words=10)')
+get_ipython().run_line_magic('timeit', '-r10 -n10 my_lda_func_opt(corpus=lil, num_topics=2, id2word=id2word, num_words=10)')
 
 
 
-# ### Real world data (from Tweet)
-
+### Real world data (from Tweet)
 
 # Real world sample data
 raw_tweets = pd.read_csv('clean_tweets.csv')
-
 tweets_list = raw_tweets.Tweets.values.tolist()
 
 # Turn the list of string into a list of tokens
 clean_tweets = [t.split(',') for t in tweets_list]
-
 len(clean_tweets)
-
-
 id2word = Dictionary(clean_tweets)
+
 # Term Document Frequency
 corpus = [id2word.doc2bow(text) for text in clean_tweets]
 
 
-# In[165]:
+'''
+# uncomment to see runtime comparsion 
+# runtime comparsion plain vs opt
+get_ipython().run_line_magic('timeit', '-r3 -n1 my_lda_func(corpus=corpus, num_topics=10, id2word=id2word, num_words=10,chunksize=100)')
+get_ipython().run_line_magic('timeit', '-r3 -n1 my_lda_func_opt(corpus=corpus, num_topics=10, id2word=id2word, num_words=10,chunksize=100)')
+'''
 
-
-my_lda_func(corpus=corpus, num_topics=10, id2word=id2word, num_words=10, chunksize=100)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# ## Compare with Gensim
-
-# In[37]:
-
-
-from gensim.models import LdaModel
-
-
-# In[ ]:
-
-
-lda_model = LdaModel(corpus=corpus,
-                   id2word=id2word,
-                   num_topics=10, 
-                   random_state=10,
-                   chunksize=100,
-#                    alpha='auto',```
-#                    per_word_topics=True
-                    )
-
-
-# In[195]:
-
-
-# original time comparison between plain code and genism's LDA
-get_ipython().run_line_magic('timeit', '-r1 -n2 my_lda_func(corpus=corpus, num_topics=10, id2word=id2word, num_words=10,chunksize=100)')
-get_ipython().run_line_magic('timeit', '-r1 -n2 LdaModel(corpus=corpus,id2word=id2word,num_topics=10, random_state=10,chunksize=100)')
-
-
-# In[185]:
-
-
-# new comparison between optimized and genism's LDA
-get_ipython().run_line_magic('timeit', '-r1 -n2 my_lda_func(corpus=corpus, num_topics=10, id2word=id2word, num_words=10,chunksize=100)')
-get_ipython().run_line_magic('timeit', '-r1 -n2 LdaModel(corpus=corpus,id2word=id2word,num_topics=10, random_state=10,chunksize=100)')
-
-
-# ### before optimization stats
-
-# In[196]:
-
+### before optimization stats
 
 profile = get_ipython().run_line_magic('prun', '-r -q my_lda_func(corpus=corpus, num_topics=10, id2word=id2word, num_words=10,chunksize=100)')
 profile.sort_stats('cumtime').print_stats(20)
 pass
 
 
-# ### after optimization stats
-
-# In[192]:
+### after optimization stats
 
 
 # after optimization
@@ -429,8 +493,6 @@ profile = get_ipython().run_line_magic('prun', '-r -q my_lda_func(corpus=corpus,
 profile.sort_stats('cumtime').print_stats(20)
 pass
 
-
-# In[ ]:
 
 
 
