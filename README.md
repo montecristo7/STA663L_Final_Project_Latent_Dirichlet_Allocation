@@ -37,6 +37,6 @@ pip install .
 ## Support
 The open-source library for unsupervised topic modeling and natural language processing **Gensim** had implemented plain LDA model, and LDA multicore model using CPU cores to parallelize and speed up model training.  
 You can find more about the library on :
-- [gensim IDA model](https://radimrehurek.com/gensim/models/ldamodel.html)
-- [gensim IDA multicore](https://radimrehurek.com/gensim/models/ldamulticore.html#module-gensim.models.ldamulticore)
+- [gensim LDA model](https://radimrehurek.com/gensim/models/ldamodel.html)
+- [gensim LDA multicore](https://radimrehurek.com/gensim/models/ldamulticore.html#module-gensim.models.ldamulticore)
 
