@@ -12,12 +12,6 @@ git clone https://github.com/montecristo7/STA663L_Final_Project_Latent_Dirichlet
 pip install .
 ```
 
-## Usage
-
-```python
-import LDA
-my_lda_func(xxxx)
-```
 
 ## Directory Tree
 
