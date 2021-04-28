@@ -27,12 +27,8 @@ pip install .
 │   ├── comparative_analysis.py
 │   ├── LDA_class.py
 │   ├── LDA_function_optimization_process.py
-│   ├── LDA_function.py
-│   └── __pycache__
-│       └── LDA_function.cpython-38.pyc
+│   └── LDA_function.py
 └── test
-    ├── __pycache__
-    │   └── test_LDA_function.cpython-38.pyc
     └── test_LDA_function.py
  
 ```
