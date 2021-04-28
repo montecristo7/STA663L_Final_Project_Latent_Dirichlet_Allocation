@@ -19,4 +19,12 @@ import LDA
 my_lda_func(xxxx)
 ```
 
-
+# Menu
+o
+|-- [src](https://github.com/montecristo7/STA663L_Final_Project_Latent_Dirichlet_Allocation/tree/main/src)
+|   |-- plain algorithm code
+|   |-- optimized algorithm code
+|   `-- comparative analysis code
+|-- [test](https://github.com/montecristo7/STA663L_Final_Project_Latent_Dirichlet_Allocation/tree/main/test)
+|   `-- unit test
+`-- [final report pdf]()
