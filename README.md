@@ -22,16 +22,23 @@ my_lda_func(xxxx)
 ## Directory Tree
 
 ```
-project
-│   README.md
-│   final report    
-│
-└───src
-│   │   LDA_class.py
-|   |   LDA_function.py
-│   │   LDAModel_Optimization.py
-│   │   comparative_analysis.py
-└───test
-    │   test_LDA_function.py
-    │   
+.
+├── example
+│   ├── example_LDA_function.py
+│   └── sleep_diet_exercise.csv
+├── LICENSE
+├── README.md
+├── setup.py
+├── src
+│   ├── comparative_analysis.py
+│   ├── LDA_class.py
+│   ├── LDA_function_optimization_process.py
+│   ├── LDA_function.py
+│   └── __pycache__
+│       └── LDA_function.cpython-38.pyc
+└── test
+    ├── __pycache__
+    │   └── test_LDA_function.cpython-38.pyc
+    └── test_LDA_function.py
+ 
 ```
