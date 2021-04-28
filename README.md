@@ -32,3 +32,8 @@ pip install .
     └── test_LDA_function.py
  
 ```
+
+## Support
+The open-source library for unsupervised topic modeling and natural language processing Genism had implemented LDA model, and LDA multicore model.
+You can find more about the library on https://radimrehurek.com/gensim/models/ldamodel.html, and https://radimrehurek.com/gensim/models/ldamulticore.html#module-gensim.models.ldamulticore. 
+
