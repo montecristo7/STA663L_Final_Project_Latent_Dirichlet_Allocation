@@ -8,8 +8,8 @@ This project re-Implementated the LDA algorithm described in https://www.jmlr.or
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install the package.
 
 ```bash
--- change later
-pip install foobar
+git clone https://github.com/montecristo7/STA663L_Final_Project_Latent_Dirichlet_Allocation.git
+pip install .
 ```
 
 ## Usage
