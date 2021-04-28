@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 from scipy.special import psi  # gamma function utils
+from collections import Counter
 
 
 stop_words = ["would", "could", "said", "u", "us", "also", "may", "i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if",
@@ -14,28 +15,21 @@ def tf(docs):
     """
     This function is used to calculate the document-term matrix and id2word mapping
     """
-    # Clean up the text
     docsc_clean = {}
     total_term = []
     for key, val in enumerate(docs):
         val_clean = re.findall(r'[a-z]+', val.lower())
         val_clean = [i for i in val_clean if i not in stop_words]
-        docsc_clean[f'd{key}'] = val_clean
+        docsc_clean[f'd{key}'] = Counter(val_clean)
         total_term += val_clean
+        total_term = list(set(total_term))
 
-    total_term_unique = sorted(set(total_term))
-    id2word = {idx: word for idx, word in enumerate(total_term_unique)}
-
-    # Count the number of occurrences of term i in document j
-    for key, val in docsc_clean.items():
-        word_dir = dict.fromkeys(total_term_unique, 0)
-        for word in val:
-            word_dir[word] += 1
-        docsc_clean[key] = word_dir
+    total_term = sorted(total_term)
+    id2word = {idx: word for  idx, word in enumerate(total_term)}
 
     tf_df = pd.DataFrame.from_dict(docsc_clean, orient='index')
-
-    return tf_df, id2word
+    tf_df = tf_df.fillna(0)
+    return tf_df.get(total_term), id2word
 
 
 def dirichlet_expectation(sstats):

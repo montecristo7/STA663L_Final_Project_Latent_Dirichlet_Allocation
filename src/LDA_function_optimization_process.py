@@ -1,22 +1,10 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[167]:
-
-
 import pandas as pd
 import numpy as np
 import re
 from scipy.special import psi  # gamma function utils
-from pprint import pprint
-import gensim.corpora as corpora
-from gensim.corpora import Dictionary
 import logging
 import queue
 from numba import jit,njit
-
-
-# In[190]:
 
 
 ## Utils and Helper Class
@@ -146,9 +134,6 @@ class LdaState:
 
 # ## helper functions for my_lda_func
 
-# In[169]:
-
-
 def initalize(id2word,num_topics,dtype,random_state):
     '''
     initialize all the variables needed for LDA
@@ -169,9 +154,6 @@ def initalize(id2word,num_topics,dtype,random_state):
     return num_terms,alpha,eta,rand,model_states,expElogbeta
 
 
-# In[170]:
-
-
 def e_step_1(rand,chunk,num_topics, dtype,expElogbeta):
     '''
     e step 
@@ -185,9 +167,6 @@ def e_step_1(rand,chunk,num_topics, dtype,expElogbeta):
     converged = 0
     
     return gamma,tmpElogtheta,tmpexpElogtheta,sstats,converged
-
-
-# In[171]:
 
 
 def e_step_2(chunk,gamma,tmpElogtheta,tmpexpElogtheta,expElogbeta,sstats,converged,dtype,iterations,alpha,gamma_threshold):
@@ -216,9 +195,6 @@ def e_step_2(chunk,gamma,tmpElogtheta,tmpexpElogtheta,expElogbeta,sstats,converg
     return gamma, sstats,converged
 
 
-# In[172]:
-
-
 def m_step(model_states,pass_ ,num_updates, chunksize,other):
     '''
     m step
@@ -236,18 +212,7 @@ def m_step(model_states,pass_ ,num_updates, chunksize,other):
     
     return model_states,num_updates,diff
 
-
-# In[ ]:
-
-
-
-
-
 # ## Optimization on the 2 functions below
-
-# In[193]:
-
-
 
 def e_step_2_inner_update(iterations,gammad,alpha,expElogthetad,cts,phinorm,expElogbetad,gamma_threshold,converged,epsilon):
     '''
@@ -271,22 +236,7 @@ def e_step_2_inner_update(iterations,gammad,alpha,expElogthetad,cts,phinorm,expE
     return gammad, expElogthetad,phinorm,converged
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
 # ## Main LDA function
-
-# In[174]:
-
 
 def my_lda_func(corpus, num_topics, id2word, random_state=10,  passes=1, num_words=10,
                 iterations=50, gamma_threshold=0.001, dtype=np.float32,  chunksize=100, topics_only=True, verbose=False):
@@ -352,16 +302,7 @@ def my_lda_func(corpus, num_topics, id2word, random_state=10,  passes=1, num_wor
         return shown,gamma
 
 
-# In[ ]:
-
-
-
-
-
 # ### small dataset example
-
-# In[175]:
-
 
 # Sample data for analysis
 d1 = "Java is a language for programming that develops a software for several platforms. A compiled code or bytecode on Java application can run on most of the operating systems including Linux, Mac operating system, and Linux. Most of the syntax of Java is derived from the C++ and C languages."
@@ -369,9 +310,6 @@ d2 = "Python supports multiple programming paradigms and comes up with a large s
 d3 = "Go is typed statically compiled language. It was created by Robert Griesemer, Ken Thompson, and Rob Pike in 2009. This language offers garbage collection, concurrency of CSP-style, memory safety, and structural typing."
 d4 = "A young girl when she first visited magical Underland, Alice Kingsleigh (Mia Wasikowska) is now a teenager with no memory of the place -- except in her dreams."
 d5 = "Her life takes a turn for the unexpected when, at a garden party for her fiance and herself, she spots a certain white rabbit and tumbles down a hole after him. Reunited with her friends the Mad Hatter (Johnny Depp), the Cheshire Cat and others, Alice learns it is her destiny to end the Red Queen's (Helena Bonham Carter) reign of terror."
-
-
-# In[180]:
 
 
 # Using slow version tf_df
@@ -385,32 +323,19 @@ for row in tf_df.values:
             lil_sub.append((idx, item))
     lil.append(lil_sub)
     
-pprint(my_lda_func(corpus=lil, num_topics=2, id2word=id2word, num_words=10))
-
-
-# In[115]:
+print(my_lda_func(corpus=lil, num_topics=2, id2word=id2word, num_words=10)
 
 
 get_ipython().run_line_magic('timeit', '-r3 -n2 my_lda_func(corpus=lil, num_topics=2, id2word=id2word, num_words=10)')
 # without jit 
 
 
-# In[181]:
-
-
 get_ipython().run_line_magic('timeit', '-r3 -n2 my_lda_func(corpus=lil, num_topics=2, id2word=id2word, num_words=10)')
 # with jit
 
 
-# In[ ]:
-
-
-
-
 
 # ### Real world data (from Tweet)
-
-# In[183]:
 
 
 # Real world sample data
@@ -422,9 +347,6 @@ tweets_list = raw_tweets.Tweets.values.tolist()
 clean_tweets = [t.split(',') for t in tweets_list]
 
 len(clean_tweets)
-
-
-# In[184]:
 
 
 id2word = Dictionary(clean_tweets)
