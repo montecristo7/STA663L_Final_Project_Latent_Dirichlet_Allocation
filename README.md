@@ -26,12 +26,12 @@ project
 │   README.md
 │   final report    
 │
-└───[src](https://github.com/montecristo7/STA663L_Final_Project_Latent_Dirichlet_Allocation/tree/main/src)
+└───src
 │   │   LDA_class.py
 |   |   LDA_function.py
 │   │   LDAModel_Optimization.py
 │   │   comparative_analysis.py
-└───[test](https://github.com/montecristo7/STA663L_Final_Project_Latent_Dirichlet_Allocation/tree/main/test)
+└───test
     │   test_LDA_function.py
     │   
 ```
