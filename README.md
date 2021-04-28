@@ -28,7 +28,7 @@ pip install .
 │   ├── LDA_class.py
 │   ├── LDA_function_optimization_process.py
 │   └── LDA_function.py
-├── STA663_final_paper_V2.pdf
+├── STA663_final_paper.pdf
 └── test
     └── test_LDA_function.py
  
